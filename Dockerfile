@@ -7,5 +7,5 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=build /go/src/github.com/natrontech/alertmanager-uptime-kuma-push/alertmanager-uptime-kuma-push ./
-EXPOSE 8080
+EXPOSE 8081
 CMD ["./alertmanager-uptime-kuma-push"]
