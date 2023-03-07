@@ -34,5 +34,5 @@ func main() {
         return c.SendString("OK")
     })
 
-    app.Listen(":" + util.ListenPort)
+    app.Listen(":8080")
 }

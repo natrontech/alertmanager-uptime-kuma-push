@@ -4,12 +4,10 @@ import (
 	"errors"
 	"os"
 	"net/url"
-	"log"
 )
 
 var (
 	UptimeKumaURL      string
-	ListenPort         string
 )
 
 // LoadEnv loads OS environment variables
@@ -29,11 +27,6 @@ func LoadEnv() error {
 	case "https":
 	default:
 		return errors.New("UPTIME_KUMA_URL has invalid scheme (http or https only)")
-	}
-
-	if ListenPort = os.Getenv("LISTEN_PORT"); ListenPort == "" {
-		ListenPort = "3000"
-		log.Println("LISTEN_PORT not set, defaulting to 3000")
 	}
 
 	return nil
