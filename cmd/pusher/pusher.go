@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "net/http"
+    "net/url"
     "log"
 
     "github.com/gofiber/fiber/v2"
@@ -25,12 +26,16 @@ func main() {
     app := fiber.New()
 
     app.All("/push", func(c *fiber.Ctx) error {
-
-        log.Println("Sending HTTP Get request to Uptime Kuma URL")
+        
+        // Only log the host of the URL
+        url, _ := url.Parse(util.UptimeKumaURL)
+        log.Println("Sending HTTP Get request to", url.Host)
+        
         _ , err := http.Get(util.UptimeKumaURL)
         if err != nil {
             log.Println("Error sending HTTP request to uptime kuma url", err)
         }
+
         return c.SendString("OK")
     })
 
