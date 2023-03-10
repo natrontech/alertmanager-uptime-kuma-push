@@ -27,7 +27,7 @@ Configure a push monitor in your Uptime Kuma instance.
 
 ![Uptime Kuma push monitor](docs/uptime_kuma_push.png)
 
-Add a config map with the Uptime Kuma push URL.
+Add a secret with the Uptime Kuma push URL.
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -39,6 +39,7 @@ stringData:
     UPTIME_KUMA_URL: "https://uptime-kuma.example.com/api/push/XXXXXXX"
 ```
 Add this middleware as a sidecar container to your Alertmanager deployment.
+Use the secret as an environment variable.
 ```yaml
 alertmanager:
     alertmanagerSpec:
