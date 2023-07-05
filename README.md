@@ -21,6 +21,7 @@ The binary requires the following environment variables:
 | Variable | Description |
 | --- | --- |
 | `UPTIME_KUMA_URL`| The URL to your Uptime Kuma instance. This URL should be the push monitor URL. |
+| `GET_RETRIES`| How often a GET request should be retried if it fails. Default is 3. |
 
 ### Example with kube-prometheus-stack
 Configure a push monitor in your Uptime Kuma instance.
@@ -36,7 +37,11 @@ metadata:
     namespace: monitoring
 type: Opaque
 stringData:
+    # Required
     UPTIME_KUMA_URL: "https://uptime-kuma.example.com/api/push/XXXXXXX"
+    # Optional
+    GET_RETRIES: 3
+
 ```
 Add this middleware as a sidecar container to your Alertmanager deployment.
 Use the secret as an environment variable.
