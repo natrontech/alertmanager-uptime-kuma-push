@@ -67,8 +67,8 @@ route:
           matchers:
             - alertname =~ "InfoInhibitor|Watchdog"
           group_wait: 0s
-          group_interval: 1m
-          repeat_interval: 50s
+          group_interval: 50s
+          repeat_interval: 1m
 receivers:
     - name: Dead Mans Snitch Uptime Kuma
       webhook_configs:
