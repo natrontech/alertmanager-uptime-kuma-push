@@ -28,10 +28,16 @@ func main() {
 
 	app.All("/push", func(c *fiber.Ctx) error {
 
-		// Set the timeout duration
-		client := &http.Client{
-			Timeout: 3 * time.Second,
+		tr := &http.Transport{
+			DisableKeepAlives: true,
+			IdleConnTimeout:   3 * time.Second,
+			MaxIdleConns:      1,
 		}
+
+		// Set the timeout duration
+		client := new(http.Client)
+		client.Timeout = 3 * time.Second
+		client.Transport = tr
 
 		// Loop over the number of retries
 		for i := 0; i < util.Retries; i++ {
@@ -55,9 +61,13 @@ func main() {
 				break
 			}
 
+			// sleep 3 seconds
+			time.Sleep(3 * time.Second)
+
 			// Log if it was the last try
 			if i == util.Retries-1 {
 				log.Println("Try " + strconv.Itoa(i+1) + " of " + strconv.Itoa(util.Retries) + " failed")
+				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
 		}
