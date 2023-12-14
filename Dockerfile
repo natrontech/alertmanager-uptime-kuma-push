@@ -1,4 +1,4 @@
-FROM golang:1.20.5 as build
+FROM golang:1.21.5 as build
 WORKDIR /go/src/github.com/natrontech/alertmanager-uptime-kuma-push
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o alertmanager-uptime-kuma-push ./cmd/pusher
