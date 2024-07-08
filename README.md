@@ -2,6 +2,7 @@
 ![Docker Image Version (latest semver)](https://img.shields.io/github/v/release/natrontech/alertmanager-uptime-kuma-push)
 ![Go Version](https://img.shields.io/github/go-mod/go-version/natrontech/alertmanager-uptime-kuma-push)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/natrontech/alertmanager-uptime-kuma-push/release.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/natrontech/alertmanager-uptime-kuma-push/badge)](https://securityscorecards.dev/viewer/?uri=github.com/natrontech/alertmanager-uptime-kuma-push)
 
 ## What is this?
 This binary allows you to use Uptime Kuma as a [Dead Mans Snitch](https://deadmanssnitch.com/) for your Prometheus Alertmanager.

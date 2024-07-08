@@ -1,0 +1,24 @@
+name: OSV-Scanner Scan
+
+on:
+  schedule:
+    - cron: '30 13 * * 1'
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  analyze:
+    permissions:
+      # Require writing security events to upload SARIF file to security tab
+      security-events: write
+      contents: read
+      actions: read
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@3c399db9dd6dd8106a27d280d53c55077d3f7cea" #v1.8.1
