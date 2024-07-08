@@ -74,5 +74,8 @@ func main() {
 		return c.SendString("OK")
 	})
 
-	app.Listen(":8081")
+	err := app.Listen(":8081")
+	if err != nil {
+		log.Fatal("Error starting server:", err)
+	}
 }
