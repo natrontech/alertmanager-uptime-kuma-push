@@ -6,7 +6,7 @@ defaultPlatforms:
 - linux/amd64
 builds:
 - id: alertmanager-uptime-kuma-push
-  main: ./cmd/pusher/pusher.go
+  main: ./cmd/pusher
   flags:
   - -tags
   - netgo

@@ -82,7 +82,7 @@ LABELS		    := "--image-label=org.opencontainers.image.created=$(BUILD_DATE),$\
 ko-build-local: ko
 	@echo Building $(NAME) $(KO_TAGS) for $(KO_PLATFORM) >&2
 	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(KO_REPOSITORY) \
-		$(KO) build ./cmd/pusher/ --bare --tags=$(KO_TAGS) $(LABELS) --push=false --local --platform=$(KO_PLATFORM) --sbom=none
+		$(KO) build ./cmd/pusher --bare --tags=$(KO_TAGS) $(LABELS) --push=false --local --platform=$(KO_PLATFORM) --sbom=none
 
 # Ko publish image
 .PHONY: ko-login
