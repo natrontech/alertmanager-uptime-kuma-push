@@ -5,6 +5,7 @@ VERSION     ?= $(shell git describe --tags --abbrev=0 2>/dev/null || git rev-par
 COMMIT_REF  ?= $(shell git describe --dirty --always)
 GOOS        ?= $(shell go env GOOS)
 GOARCH      ?= $(shell go env GOARCH)
+MAIN_PATH   ?= ./cmd/pusher
 LICENSE     ?= Apache-2.0
 REPO_URL    ?= https://github.com/natrontech/alertmanager-uptime-kuma-push
 MAIL        ?= info@natron.io
@@ -22,7 +23,7 @@ go-tidy:
 
 .PHONY: go-build
 go-build:
-	go build -o $(NAME) -trimpath -tags="netgo" -ldflags "-s -w -X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT_REF)' -X 'main.BuildTime=$(BUILD_DATE)'" cmd/pusher/pusher.go
+	go build -o $(NAME) -trimpath -tags="netgo" -ldflags "-s -w -X 'main.Version=$(VERSION)' -X 'main.Commit=$(COMMIT_REF)' -X 'main.BuildTime=$(BUILD_DATE)'" $(MAIN_PATH)
 	@echo "Go build completed."
 
 #########
@@ -82,7 +83,7 @@ LABELS		    := "--image-label=org.opencontainers.image.created=$(BUILD_DATE),$\
 ko-build-local: ko
 	@echo Building $(NAME) $(KO_TAGS) for $(KO_PLATFORM) >&2
 	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(KO_REPOSITORY) \
-		$(KO) build ./cmd/pusher --bare --tags=$(KO_TAGS) $(LABELS) --push=false --local --platform=$(KO_PLATFORM) --sbom=none
+		$(KO) build $(MAIN_PATH) --bare --tags=$(KO_TAGS) $(LABELS) --push=false --local --platform=$(KO_PLATFORM) --sbom=none
 
 # Ko publish image
 .PHONY: ko-login
@@ -92,7 +93,7 @@ ko-login: ko
 .PHONY: ko-publish
 ko-publish: ko-login
 	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(KO_REPOSITORY) \
-		$(KO) build ./ --bare --tags=$(KO_TAGS) $(LABELS) --sbom=none
+		$(KO) build $(MAIN_PATH) --bare --tags=$(KO_TAGS) $(LABELS) --sbom=none
 
 ###########
 # Helpers #

@@ -61,7 +61,7 @@ alertmanager:
     # Sidecar middleware to push watchdog alerts to uptime-kuma
         containers:
         - name: alertmanager-uptime-kuma-push
-            image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:0.0.3
+            image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
             ports:
             - containerPort: 8081
             envFrom:
