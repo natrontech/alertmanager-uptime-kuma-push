@@ -7,6 +7,7 @@ before:
 
 builds:
   - id: alertmanager-uptime-kuma-push
+    main: ./cmd/pusher
     binary: '{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}'
     # set for reproducible builds
     mod_timestamp: '{{ .CommitTimestamp }}'
