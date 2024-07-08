@@ -12,10 +12,17 @@ import (
 	"github.com/natrontech/alertmanager-uptime-kuma-push/internal/util"
 )
 
+// These variables are set in build step
+var Version = "v0.0.0-dev.0"
+var Commit = "none"
+var BuildTime = "unknown"
+
 func init() {
 
 	// Log with timestamp
 	log.SetFlags(log.LstdFlags)
+
+	log.Println("Starting pusher", Version, "commit", Commit, "build time", BuildTime)
 
 	if err := util.LoadEnv(); err != nil {
 		log.Println("Error loading environment variables:", err)

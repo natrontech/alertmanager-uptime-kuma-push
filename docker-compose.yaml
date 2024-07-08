@@ -1,0 +1,10 @@
+services:
+  alertmanager-uptime-kuma-push:
+    image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
+    container_name: alertmanager-uptime-kuma-push
+    user: '65534'
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - UPTIME_KUMA_URL="https://uptime-kuma.example.com/api/push/XXXXXXX"

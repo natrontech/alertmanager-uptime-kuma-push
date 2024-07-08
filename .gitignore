@@ -14,8 +14,7 @@ tags
 .vscode/
 .decrypted~*
 # local binary
-pbs-exporter
+alertmanager-uptime-kuma-push
 .env
 bin
 .secrets/
-alertmanager-uptime-kuma-push
