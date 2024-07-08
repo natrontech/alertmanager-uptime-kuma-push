@@ -1,0 +1,20 @@
+# swap
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+# session
+Session.vim
+# temporary
+.netrwhist
+*~
+# auto-generated tag files
+tags
+# Apple
+.DS_Store
+# vscode
+.vscode/
+.decrypted~*
+# local binary
+alertmanager-uptime-kuma-push
+.env
+bin
+.secrets/

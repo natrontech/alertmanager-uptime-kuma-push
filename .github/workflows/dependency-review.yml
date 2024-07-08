@@ -1,0 +1,31 @@
+name: 'Dependency Review'
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - id: checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      - name: 'Dependency Review'
+        uses: actions/dependency-review-action@72eb03d02c7872a771aacd928f3123ac62ad6d3a # v4.3.3
+        with:
+          # fail if a pull request introduce vulnerabilities of level "low" or higher
+          fail-on-severity: low
+          # allowed licenses in SPDX format, the action will fail if a new dependencies with a license not in this list is introduced
+          # if the license cant be detected, the action will inform but not fail
+          #allow-licenses: 'Apache-2.0, MIT, GPL-3.0-or-later, MPL-2.0'
+          # threshold for the OpenSSF Scorecard level, the action will get a warning in the CI
+          warn-on-openssf-scorecard-level: 3
