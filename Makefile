@@ -18,7 +18,7 @@ DESCRIPTION ?= Use Uptime Kuma as a Dead Mans Snitch
 
 .PHONY: go-tidy
 go-tidy:
-	go mod tidy -compat=1.22
+	go mod tidy -compat=1.23
 	@echo "Go modules tidied."
 
 .PHONY: go-lint
@@ -41,7 +41,7 @@ go-build:
 # TOOLS #
 #########
 
-KO_VERSION  = v0.15.2
+KO_VERSION  = v0.17.1
 KO = $(shell pwd)/bin/ko
 
 ko:
