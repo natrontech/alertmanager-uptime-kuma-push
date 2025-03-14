@@ -12,7 +12,7 @@ The contributor will send a response indicating the next steps in handling your 
 
 The release workflow creates provenance for its builds using the [SLSA standard](https://slsa.dev), which conforms to the [Level 3 specification](https://slsa.dev/spec/v1.0/levels#build-l3). The provenance is stored in the `multiple.intoto.jsonl` file of each release and can be used to verify the integrity and authenticity of the release artifacts.
 
-All signatures are created by [Cosign](https://github.com/sigstore/cosign) using the [keyless signing](https://docs.sigstore.dev/verifying/verify/#keyless-verification-using-openid-connect) method. An overview how the keyless signing works can be found [here](./docs/slsa/sigstore/).
+All signatures are created by [Cosign](https://github.com/sigstore/cosign) using the [keyless signing](https://docs.sigstore.dev/verifying/verify/#keyless-verification-using-openid-connect) method.
 
 ### Prerequisites
 
@@ -36,7 +36,7 @@ You can manually inspect the provenance of the release artifacts (without contai
 curl -L -O https://github.com/natrontech/alertmanager-uptime-kuma-push/releases/download/$VERSION/multiple.intoto.jsonl
 
 # decode the payload
-cat multiple.intoto.jsonl | jq -r '.payload' | base64 -d | jq
+cat multiple.intoto.jsonl | jq -r '.dsseEnvelope.payload' | base64 -d | jq
 ```
 
 ### Verify provenance of release artifacts
@@ -100,7 +100,7 @@ COSIGN_REPOSITORY=ghcr.io/natrontech/signatures cosign verify-attestation \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+$' \
   --policy policy.cue \
-  $IMAGE | jq
+  $IMAGE | jq -r '.payload' | base64 -d | jq
 ```
 
 ### Verify signature of container image
