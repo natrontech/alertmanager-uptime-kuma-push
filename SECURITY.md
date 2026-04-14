@@ -14,6 +14,11 @@ The release workflow creates provenance for its builds using the [SLSA standard]
 
 All signatures are created by [Cosign](https://github.com/sigstore/cosign) using the [keyless signing](https://docs.sigstore.dev/cosign/verifying/verify/#keyless-verification-using-openid-connect) method.
 
+> [!NOTE]
+> **Verification by release version**
+> - **v1.2.0+**: Signatures and SBOM attestations are stored as OCI 1.1 referrers in the image repository (`ghcr.io/natrontech/alertmanager-uptime-kuma-push`). Use the commands in this document.
+> - **≤ v1.1.2**: Signatures and SBOM attestations were stored in separate repositories. See [Legacy verification (≤ v1.1.2)](#legacy-verification--v112).
+
 ### Prerequisites
 
 To verify the release artifacts, you will need the [slsa-verifier](https://github.com/slsa-framework/slsa-verifier), [cosign](https://github.com/sigstore/cosign) and [crane](https://github.com/google/go-containerregistry/blob/main/cmd/crane/README.md) binaries.
@@ -79,7 +84,6 @@ IMAGE="${IMAGE}@"$(crane digest "${IMAGE}")
 # verify the image
 slsa-verifier verify-image \
   --source-uri github.com/natrontech/alertmanager-uptime-kuma-push \
-  --provenance-repository ghcr.io/natrontech/signatures \
   --source-versioned-tag $VERSION \
   $IMAGE
 ```
@@ -88,14 +92,14 @@ The output should be: `PASSED: Verified SLSA provenance`.
 
 **Verify with Cosign**
 
-As an alternative to the SLSA verifier, you can use `cosign` to verify the provenance of the container images. Cosign also supports validating the attestation against `CUE` policies (see [Validate In-Toto Attestation](https://docs.sigstore.dev/cosign/verifying/attestation/#validate-in-toto-attestations) for more information), which is useful to ensure that some specific requirements are met. We provide a [policy.cue](./policy.cue) file to verify the correct workflow has triggered the release and that the image was generated from the correct source repository. 
+As an alternative to the SLSA verifier, you can use `cosign` to verify the provenance of the container images. Cosign also supports validating the attestation against `CUE` policies (see [Validate In-Toto Attestation](https://docs.sigstore.dev/cosign/verifying/attestation/#validate-in-toto-attestations) for more information), which is useful to ensure that some specific requirements are met. We provide a [policy.cue](./policy.cue) file to verify the correct workflow has triggered the release and that the image was generated from the correct source repository.
 
 ```bash
 # download policy.cue
 curl -L -O https://raw.githubusercontent.com/natrontech/alertmanager-uptime-kuma-push/main/policy.cue
 
-# verify the image with cosign (at the moment use `--new-bundle-format=false` as the new format is not yet supported for SLSA provenance)
-COSIGN_REPOSITORY=ghcr.io/natrontech/signatures cosign verify-attestation \
+# verify the image with cosign (use `--new-bundle-format=false` as the SLSA generator does not yet use the new bundle format)
+cosign verify-attestation \
   --type slsaprovenance \
   --new-bundle-format=false \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
@@ -110,7 +114,7 @@ The container images are additionally signed with cosign. The signature can be v
 **Important**: only the multi-arch image is signed, not the individual platform images.
 
 ```bash
-COSIGN_REPOSITORY=ghcr.io/natrontech/signatures cosign verify \
+cosign verify --new-bundle-format \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github.com/natrontech/alertmanager-uptime-kuma-push/.github/workflows/release.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$' \
   $IMAGE | jq
@@ -150,7 +154,7 @@ The SBOMs of the Go binary archives are provided in the `*.tar.gz.sbom.json` fil
 
 #### Container images
 
-The SBOMs of the container is attestated with Cosign and uploaded to the `ghcr.io/natrontech/sbom` repository. The SBOMs can be verified with the `cosign` binary.
+The SBOM of the container image is attested with Cosign and stored as an OCI 1.1 referrer in the image repository. The SBOM can be verified with the `cosign` binary.
 
 **Important**: Only the multi-arch image has a SBOM, not the individual platform images.
 
@@ -160,7 +164,7 @@ The SBOMs of the container is attestated with Cosign and uploaded to the `ghcr.i
 # download policy-sbom.cue
 curl -L -O https://raw.githubusercontent.com/natrontech/alertmanager-uptime-kuma-push/main/policy-sbom.cue
 
-COSIGN_REPOSITORY=ghcr.io/natrontech/sbom cosign verify-attestation \
+cosign verify-attestation --new-bundle-format \
   --type cyclonedx \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github.com/natrontech/alertmanager-uptime-kuma-push/.github/workflows/release.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$' \
@@ -173,10 +177,58 @@ COSIGN_REPOSITORY=ghcr.io/natrontech/sbom cosign verify-attestation \
 If you want to download the SBOM of the container image, you can use the following command:
 
 ```bash
-COSIGN_REPOSITORY=ghcr.io/natrontech/sbom cosign verify-attestation \
+cosign verify-attestation --new-bundle-format \
   --type cyclonedx \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github.com/natrontech/alertmanager-uptime-kuma-push/.github/workflows/release.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$' \
   --policy policy-sbom.cue \
   $IMAGE | jq -r '.payload' | base64 -d | jq -r '.predicate' > sbom.json
+```
+
+---
+
+## Legacy verification (≤ v1.1.2)
+
+For releases v1.1.2 and earlier, signatures and SBOM attestations were stored in separate OCI repositories. Use the following commands for those releases.
+
+**Verify provenance of container image (SLSA)**
+
+```bash
+cosign verify-attestation \
+  --type slsaprovenance \
+  --new-bundle-format=false \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+$' \
+  --policy policy.cue \
+  $IMAGE | jq -r '.payload' | base64 -d | jq
+```
+
+**Verify signature of container image**
+
+```bash
+COSIGN_REPOSITORY=ghcr.io/natrontech/signatures cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/natrontech/alertmanager-uptime-kuma-push/.github/workflows/release.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$' \
+  $IMAGE | jq
+```
+
+**Verify SBOM of container image**
+
+```bash
+COSIGN_REPOSITORY=ghcr.io/natrontech/sbom cosign verify-attestation \
+  --type cyclonedx \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/natrontech/alertmanager-uptime-kuma-push/.github/workflows/release.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+(-rc.[0-9]+)?$' \
+  --policy policy-sbom.cue \
+  $IMAGE | jq -r '.payload' | base64 -d | jq
+```
+
+**Verify image with SLSA verifier (legacy)**
+
+```bash
+slsa-verifier verify-image \
+  --source-uri github.com/natrontech/alertmanager-uptime-kuma-push \
+  --provenance-repository ghcr.io/natrontech/signatures \
+  --source-versioned-tag $VERSION \
+  $IMAGE
 ```
