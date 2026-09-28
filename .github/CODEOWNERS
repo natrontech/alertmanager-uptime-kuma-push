@@ -1,0 +1,5 @@
+* @svengerber
+
+/.github/CODEOWNERS  @natrontech/open-source-owners
+/SECURITY.md         @natrontech/open-source-owners
+/LICENSE             @natrontech/open-source-owners
