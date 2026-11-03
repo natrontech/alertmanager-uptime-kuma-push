@@ -2,7 +2,7 @@ module github.com/natrontech/alertmanager-uptime-kuma-push
 
 go 1.27.1
 
-require github.com/gofiber/fiber/v2 v2.52.15
+require github.com/gofiber/fiber/v2 v2.52.16
 
 require (
 	github.com/andybalholm/brotli v1.2.3 // indirect
