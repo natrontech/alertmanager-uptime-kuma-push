@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -80,7 +81,8 @@ func newApp() *fiber.App {
 
 			resp, err := client.Get(util.UptimeKumaURL)
 			if err != nil {
-				log.Println("Error sending HTTP request to uptime kuma url", err)
+				// The *url.Error wrapper holds the full URL including the push token, log only its cause
+				log.Println("Error sending HTTP request to uptime kuma url", errors.Unwrap(err))
 			} else {
 				_ = resp.Body.Close()
 

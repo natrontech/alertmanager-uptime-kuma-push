@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -113,5 +116,25 @@ func TestPushOnlyForFiringWatchdog(t *testing.T) {
 		if got := gets.Load(); got != tc.gets {
 			t.Errorf("%s: %d GETs, want %d", tc.name, got, tc.gets)
 		}
+	}
+}
+
+func TestPushTokenNotLogged(t *testing.T) {
+	const token = "secret-push-token"
+	fakeKuma(t, 1, func(_ http.ResponseWriter, r *http.Request) { <-r.Context().Done() })
+	util.UptimeKumaURL += "/api/push/" + token
+
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	if got := send(t, http.MethodPost, watchdogBody); got != 500 {
+		t.Errorf("answered %d, want 500", got)
+	}
+	if strings.Contains(logs.String(), token) {
+		t.Errorf("push token in logs:\n%s", logs.String())
+	}
+	if !strings.Contains(logs.String(), "Client.Timeout") {
+		t.Errorf("failure cause missing from logs:\n%s", logs.String())
 	}
 }
