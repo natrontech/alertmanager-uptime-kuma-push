@@ -29,7 +29,7 @@ The binary requires the following environment variables:
 | Variable          | Description                                                                    |
 | ----------------- | ------------------------------------------------------------------------------ |
 | `UPTIME_KUMA_URL` | The URL to your Uptime Kuma instance. This URL should be the push monitor URL. |
-| `GET_RETRIES`     | How often a GET request should be retried if it fails. Default is 3.           |
+| `GET_RETRIES`     | How often a GET request should be tried. Must be at least 1. Default is 3.     |
 
 ### Example with kube-prometheus-stack
 Configure a push monitor in your Uptime Kuma instance.

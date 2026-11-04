@@ -34,6 +34,9 @@ func LoadEnv() error {
 		if err != nil {
 			return fmt.Errorf("error converting GET_RETRIES to int: %w", err)
 		}
+		if getRetries < 1 {
+			return errors.New("GET_RETRIES must be at least 1")
+		}
 		Retries = getRetries
 	}
 
