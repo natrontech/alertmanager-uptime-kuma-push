@@ -7,4 +7,4 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - UPTIME_KUMA_URL="https://uptime-kuma.example.com/api/push/XXXXXXX"
+      UPTIME_KUMA_URL: "https://uptime-kuma.example.com/api/push/XXXXXXX"
