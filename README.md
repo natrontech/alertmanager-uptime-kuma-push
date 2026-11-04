@@ -54,7 +54,7 @@ stringData:
     # Required
     UPTIME_KUMA_URL: "https://uptime-kuma.example.com/api/push/XXXXXXX"
     # Optional
-    GET_RETRIES: 3
+    GET_RETRIES: "3"
 ```
 
 Add this middleware as a sidecar container to your Alertmanager deployment.
@@ -63,15 +63,15 @@ Use the secret as an environment variable.
 ```yaml
 alertmanager:
     alertmanagerSpec:
-    # Sidecar middleware to push watchdog alerts to uptime-kuma
+        # Sidecar middleware to push watchdog alerts to uptime-kuma
         containers:
-        - name: alertmanager-uptime-kuma-push
-            image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
-            ports:
-            - containerPort: 8081
-            envFrom:
-            - secretRef:
-                name: uptime-kuma-url
+            - name: alertmanager-uptime-kuma-push
+              image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
+              ports:
+                  - containerPort: 8081
+              envFrom:
+                  - secretRef:
+                        name: uptime-kuma-url
 ```
 
 Add a new receiver for the Watchdog alert to your Alertmanager configuration.
