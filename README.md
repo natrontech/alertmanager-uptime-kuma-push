@@ -17,7 +17,8 @@ If your Alertmanager stops sending alerts, Uptime Kuma will send you a notificat
 Alertmanager allows you to configure webhooks to send alerts to.
 All webhook alerts from Alertmanager are sent using the HTTP POST method.
 Uptime Kuma has a Push Monitor, that listens only for HTTP GET requests.
-This middleware listens for POST requests on port 8081 and the `/push` path and forwards them to Uptime Kuma as plain GET requests.
+This middleware listens for POST requests on port 8081 and the `/push` path and sends a plain GET request to Uptime Kuma if the Alertmanager webhook body contains a firing alert named `Watchdog`.
+Any other valid webhook is answered with 200 and pushes nothing. An invalid body is answered with 400.
 
 ## How to use
 
@@ -29,7 +30,11 @@ The binary requires the following environment variables:
 | Variable          | Description                                                                    |
 | ----------------- | ------------------------------------------------------------------------------ |
 | `UPTIME_KUMA_URL` | The URL to your Uptime Kuma instance. This URL should be the push monitor URL. |
-| `GET_RETRIES`     | How often a GET request should be retried if it fails. Default is 3.           |
+| `GET_RETRIES`     | How often a GET request should be tried. Must be at least 1. Default is 3.     |
+
+All tries of one webhook share a budget of 9 seconds, which fits inside the notification timeout of any Alertmanager route (at least 10 seconds).
+More tries mean a shorter timeout per try.
+If you set `timeout` in `webhook_configs`, keep it above 9 seconds, otherwise Alertmanager gives up before the pusher has answered.
 
 ### Example with kube-prometheus-stack
 Configure a push monitor in your Uptime Kuma instance.
@@ -49,7 +54,7 @@ stringData:
     # Required
     UPTIME_KUMA_URL: "https://uptime-kuma.example.com/api/push/XXXXXXX"
     # Optional
-    GET_RETRIES: 3
+    GET_RETRIES: "3"
 ```
 
 Add this middleware as a sidecar container to your Alertmanager deployment.
@@ -58,15 +63,15 @@ Use the secret as an environment variable.
 ```yaml
 alertmanager:
     alertmanagerSpec:
-    # Sidecar middleware to push watchdog alerts to uptime-kuma
+        # Sidecar middleware to push watchdog alerts to uptime-kuma
         containers:
-        - name: alertmanager-uptime-kuma-push
-            image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
-            ports:
-            - containerPort: 8081
-            envFrom:
-            - secretRef:
-                name: uptime-kuma-url
+            - name: alertmanager-uptime-kuma-push
+              image: ghcr.io/natrontech/alertmanager-uptime-kuma-push:latest
+              ports:
+                  - containerPort: 8081
+              envFrom:
+                  - secretRef:
+                        name: uptime-kuma-url
 ```
 
 Add a new receiver for the Watchdog alert to your Alertmanager configuration.
@@ -77,7 +82,7 @@ route:
     routes:
         - receiver: Dead Mans Snitch Uptime Kuma
           matchers:
-            - alertname =~ "InfoInhibitor|Watchdog"
+            - alertname = "Watchdog"
           group_wait: 0s
           group_interval: 50s
           repeat_interval: 1m

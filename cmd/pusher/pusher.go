@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -17,23 +20,36 @@ var Version = "v0.0.0-dev.0"
 var Commit = "none"
 var BuildTime = "unknown"
 
-func init() {
+// pushBudget bounds all attempts of one webhook together. Alertmanager cancels a
+// notification after max(group_interval, 10s) plus its cluster peer wait, so this fits any route.
+var pushBudget = 9 * time.Second
 
-	// Log with timestamp
-	log.SetFlags(log.LstdFlags)
-
-	log.Println("Starting pusher", Version, "commit", Commit, "build time", BuildTime)
-
-	if err := util.LoadEnv(); err != nil {
-		log.Println("Error loading environment variables:", err)
-		os.Exit(1)
-	}
+// alert is the part of an alert in the Alertmanager webhook body that the pusher reads.
+type alert struct {
+	Status string            `json:"status"`
+	Labels map[string]string `json:"labels"`
 }
 
-func main() {
+func newApp() *fiber.App {
 	app := fiber.New()
 
-	app.All("/push", func(c *fiber.Ctx) error {
+	app.Post("/push", func(c *fiber.Ctx) error {
+
+		var body struct {
+			Alerts []alert `json:"alerts"`
+		}
+		if err := json.Unmarshal(c.Body(), &body); err != nil {
+			log.Println("Ignoring webhook with invalid body:", err)
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		// Only a firing Watchdog keeps the monitor alive. Answer OK otherwise, there is nothing for Alertmanager to retry.
+		if !slices.ContainsFunc(body.Alerts, func(a alert) bool {
+			return a.Status == "firing" && a.Labels["alertname"] == "Watchdog"
+		}) {
+			log.Println("Webhook has no firing Watchdog alert, not pushing")
+			return c.SendString("OK")
+		}
 
 		tr := &http.Transport{
 			DisableKeepAlives: true,
@@ -41,9 +57,12 @@ func main() {
 			MaxIdleConns:      1,
 		}
 
+		// Each attempt gets an equal share of the budget
+		attemptTime := pushBudget / time.Duration(util.Retries)
+
 		// Set the timeout duration
 		client := new(http.Client)
-		client.Timeout = 3 * time.Second
+		client.Timeout = attemptTime
 		client.Transport = tr
 
 		// Loop over the number of retries
@@ -54,22 +73,25 @@ func main() {
 				log.Println("Try " + strconv.Itoa(i) + " of " + strconv.Itoa(util.Retries) + " failed, trying again")
 			}
 
+			start := time.Now()
+
 			// Only log the host of the URL
 			url, _ := url.Parse(util.UptimeKumaURL)
 			log.Println("Sending HTTP GET request to", url.Host)
 
-			_, err := client.Get(util.UptimeKumaURL)
+			resp, err := client.Get(util.UptimeKumaURL)
 			if err != nil {
-				log.Println("Error sending HTTP request to uptime kuma url", err)
-			}
+				// The *url.Error wrapper holds the full URL including the push token, log only its cause
+				log.Println("Error sending HTTP request to uptime kuma url", errors.Unwrap(err))
+			} else {
+				_ = resp.Body.Close()
 
-			// Exit the loop if there is no error
-			if err == nil {
-				break
+				// Exit the loop if the push was accepted
+				if resp.StatusCode/100 == 2 {
+					break
+				}
+				log.Println("Uptime Kuma answered with status", resp.StatusCode)
 			}
-
-			// sleep 3 seconds
-			time.Sleep(3 * time.Second)
 
 			// Log if it was the last try
 			if i == util.Retries-1 {
@@ -77,11 +99,28 @@ func main() {
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
+			// Wait out the rest of this attempt's share, so a quick failure does not use up all tries at once
+			time.Sleep(attemptTime - time.Since(start))
 		}
 		return c.SendString("OK")
 	})
 
-	err := app.Listen(":8081")
+	return app
+}
+
+func main() {
+
+	// Log with timestamp
+	log.SetFlags(log.LstdFlags)
+
+	log.Println("Starting pusher", Version, "commit", Commit, "build time", BuildTime)
+
+	if err := util.LoadEnv(); err != nil {
+		log.Println("Error loading environment variables:", err)
+		os.Exit(1)
+	}
+
+	err := newApp().Listen(":8081")
 	if err != nil {
 		log.Fatal("Error starting server:", err)
 	}
