@@ -17,6 +17,10 @@ var Version = "v0.0.0-dev.0"
 var Commit = "none"
 var BuildTime = "unknown"
 
+// pushBudget bounds all attempts of one webhook together. Alertmanager cancels a
+// notification after max(group_interval, 10s) plus its cluster peer wait, so this fits any route.
+var pushBudget = 9 * time.Second
+
 func newApp() *fiber.App {
 	app := fiber.New()
 
@@ -28,9 +32,12 @@ func newApp() *fiber.App {
 			MaxIdleConns:      1,
 		}
 
+		// Each attempt gets an equal share of the budget
+		attemptTime := pushBudget / time.Duration(util.Retries)
+
 		// Set the timeout duration
 		client := new(http.Client)
-		client.Timeout = 3 * time.Second
+		client.Timeout = attemptTime
 		client.Transport = tr
 
 		// Loop over the number of retries
@@ -40,6 +47,8 @@ func newApp() *fiber.App {
 			if i > 0 {
 				log.Println("Try " + strconv.Itoa(i) + " of " + strconv.Itoa(util.Retries) + " failed, trying again")
 			}
+
+			start := time.Now()
 
 			// Only log the host of the URL
 			url, _ := url.Parse(util.UptimeKumaURL)
@@ -58,15 +67,14 @@ func newApp() *fiber.App {
 				log.Println("Uptime Kuma answered with status", resp.StatusCode)
 			}
 
-			// sleep 3 seconds
-			time.Sleep(3 * time.Second)
-
 			// Log if it was the last try
 			if i == util.Retries-1 {
 				log.Println("Try " + strconv.Itoa(i+1) + " of " + strconv.Itoa(util.Retries) + " failed")
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
+			// Wait out the rest of this attempt's share, so a quick failure does not use up all tries at once
+			time.Sleep(attemptTime - time.Since(start))
 		}
 		return c.SendString("OK")
 	})

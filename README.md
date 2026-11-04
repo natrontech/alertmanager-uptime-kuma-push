@@ -31,6 +31,10 @@ The binary requires the following environment variables:
 | `UPTIME_KUMA_URL` | The URL to your Uptime Kuma instance. This URL should be the push monitor URL. |
 | `GET_RETRIES`     | How often a GET request should be tried. Must be at least 1. Default is 3.     |
 
+All tries of one webhook share a budget of 9 seconds, which fits inside the notification timeout of any Alertmanager route (at least 10 seconds).
+More tries mean a shorter timeout per try.
+If you set `timeout` in `webhook_configs`, keep it above 9 seconds, otherwise Alertmanager gives up before the pusher has answered.
+
 ### Example with kube-prometheus-stack
 Configure a push monitor in your Uptime Kuma instance.
 
