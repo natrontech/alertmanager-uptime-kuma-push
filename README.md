@@ -17,7 +17,8 @@ If your Alertmanager stops sending alerts, Uptime Kuma will send you a notificat
 Alertmanager allows you to configure webhooks to send alerts to.
 All webhook alerts from Alertmanager are sent using the HTTP POST method.
 Uptime Kuma has a Push Monitor, that listens only for HTTP GET requests.
-This middleware listens for POST requests on port 8081 and the `/push` path and forwards them to Uptime Kuma as plain GET requests.
+This middleware listens for POST requests on port 8081 and the `/push` path and sends a plain GET request to Uptime Kuma if the Alertmanager webhook body contains a firing alert named `Watchdog`.
+Any other valid webhook is answered with 200 and pushes nothing. An invalid body is answered with 400.
 
 ## How to use
 
@@ -81,7 +82,7 @@ route:
     routes:
         - receiver: Dead Mans Snitch Uptime Kuma
           matchers:
-            - alertname =~ "InfoInhibitor|Watchdog"
+            - alertname = "Watchdog"
           group_wait: 0s
           group_interval: 50s
           repeat_interval: 1m

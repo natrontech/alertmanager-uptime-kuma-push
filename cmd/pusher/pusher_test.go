@@ -91,3 +91,27 @@ func TestPushStaysInsideBudget(t *testing.T) {
 		}
 	}
 }
+
+func TestPushOnlyForFiringWatchdog(t *testing.T) {
+	for _, tc := range []struct {
+		name, method, body string
+		want               int
+		gets               int32
+	}{
+		{"firing watchdog", http.MethodPost, watchdogBody, 200, 1},
+		{"watchdog among others", http.MethodPost, `{"alerts":[{"status":"firing","labels":{"alertname":"Other"}},{"status":"firing","labels":{"alertname":"Watchdog"}}]}`, 200, 1},
+		{"resolved watchdog", http.MethodPost, `{"alerts":[{"status":"resolved","labels":{"alertname":"Watchdog"}}]}`, 200, 0},
+		{"other alert", http.MethodPost, `{"alerts":[{"status":"firing","labels":{"alertname":"Other"}}]}`, 200, 0},
+		{"no alerts", http.MethodPost, `{"alerts":[]}`, 200, 0},
+		{"invalid body", http.MethodPost, "not json", 400, 0},
+		{"get", http.MethodGet, "", 405, 0},
+	} {
+		gets := fakeKuma(t, 1, answering(200))
+		if got := send(t, tc.method, tc.body); got != tc.want {
+			t.Errorf("%s: answered %d, want %d", tc.name, got, tc.want)
+		}
+		if got := gets.Load(); got != tc.gets {
+			t.Errorf("%s: %d GETs, want %d", tc.name, got, tc.gets)
+		}
+	}
+}

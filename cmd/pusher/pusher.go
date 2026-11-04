@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strconv"
 	"time"
 
@@ -21,10 +23,32 @@ var BuildTime = "unknown"
 // notification after max(group_interval, 10s) plus its cluster peer wait, so this fits any route.
 var pushBudget = 9 * time.Second
 
+// alert is the part of an alert in the Alertmanager webhook body that the pusher reads.
+type alert struct {
+	Status string            `json:"status"`
+	Labels map[string]string `json:"labels"`
+}
+
 func newApp() *fiber.App {
 	app := fiber.New()
 
-	app.All("/push", func(c *fiber.Ctx) error {
+	app.Post("/push", func(c *fiber.Ctx) error {
+
+		var body struct {
+			Alerts []alert `json:"alerts"`
+		}
+		if err := json.Unmarshal(c.Body(), &body); err != nil {
+			log.Println("Ignoring webhook with invalid body:", err)
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		// Only a firing Watchdog keeps the monitor alive. Answer OK otherwise, there is nothing for Alertmanager to retry.
+		if !slices.ContainsFunc(body.Alerts, func(a alert) bool {
+			return a.Status == "firing" && a.Labels["alertname"] == "Watchdog"
+		}) {
+			log.Println("Webhook has no firing Watchdog alert, not pushing")
+			return c.SendString("OK")
+		}
 
 		tr := &http.Transport{
 			DisableKeepAlives: true,
