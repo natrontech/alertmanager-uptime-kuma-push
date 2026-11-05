@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/natrontech/alertmanager-uptime-kuma-push/internal/util"
 )
 
@@ -38,7 +39,7 @@ func answering(status int) http.HandlerFunc {
 func send(t *testing.T, method, body string) int {
 	t.Helper()
 	req := httptest.NewRequest(method, "/push", strings.NewReader(body))
-	resp, err := newApp().Test(req, -1)
+	resp, err := newApp().Test(req, fiber.TestConfig{Timeout: 0})
 	if err != nil {
 		t.Fatal(err)
 	}
