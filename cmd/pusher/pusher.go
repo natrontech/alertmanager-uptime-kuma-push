@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/natrontech/alertmanager-uptime-kuma-push/internal/util"
 )
 
@@ -33,7 +33,7 @@ type alert struct {
 func newApp() *fiber.App {
 	app := fiber.New()
 
-	app.Post("/push", func(c *fiber.Ctx) error {
+	app.Post("/push", func(c fiber.Ctx) error {
 
 		var body struct {
 			Alerts []alert `json:"alerts"`
